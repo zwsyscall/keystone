@@ -714,11 +714,13 @@ size_t AsmParser::Run(bool NoInitialTextSection, uint64_t Address, bool NoFinali
       continue;
     }
 
-    //printf(">> 222 error = %u\n", Info.KsError);
-    if (!KsError) {
-        KsError = Info.KsError;
-        return 0;
-    }
+    // parseStatement() reports errors through either Info.KsError or KsError.
+    // Returning immediately here avoids getting stuck retrying the same token
+    // stream forever (for example, a standalone ':' token).
+    KsError = Info.KsError ? Info.KsError : KsError;
+    if (!KsError)
+      KsError = KS_ERR_ASM_STAT_TOKEN;
+    return 0;
 
     // We had an error, validate that one was emitted and recover by skipping to
     // the next line.
